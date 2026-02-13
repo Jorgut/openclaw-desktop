@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenClaw</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="loading" class="screen active">
+      <div class="spinner"></div>
+      <h2>Connecting to OpenClaw...</h2>
+      <p id="loading-status">Reading gateway configuration</p>
+    </div>
+
+    <div id="error" class="screen">
+      <div class="error-icon">!</div>
+      <h2 id="error-title">Connection Failed</h2>
+      <p id="error-message">Unable to reach the gateway.</p>
+      <div class="error-actions">
+        <button id="retry-btn" onclick="retryConnection()">Retry Now</button>
+        <p id="retry-countdown" class="countdown"></p>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

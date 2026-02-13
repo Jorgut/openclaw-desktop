@@ -1,0 +1,19 @@
+{
+  "$schema": "https://raw.githubusercontent.com/nickkuk/nickkuk.github.io/master/tauri-v2-schema/capability.json",
+  "identifier": "default",
+  "description": "Default capabilities for OpenClaw Desktop",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "core:window:default",
+    "core:window:allow-show",
+    "core:window:allow-hide",
+    "core:window:allow-close",
+    "core:window:allow-set-focus",
+    "core:window:allow-center",
+    "core:event:default",
+    "core:event:allow-listen",
+    "core:event:allow-emit",
+    "shell:allow-open"
+  ]
+}
