@@ -17,8 +17,8 @@ pub fn shutdown() {
     }
 }
 
-/// Start the gateway if not already running.
-/// If a previous gateway is listening (e.g. orphan from crash), reuse it.
+/// Start the gateway, killing any existing instance first.
+/// Always starts fresh to guarantee proxy env vars are set correctly.
 pub fn ensure_started() {
     let base_url = match config::load_config() {
         Ok(cfg) => cfg.gateway.base_url(),
@@ -28,23 +28,24 @@ pub fn ensure_started() {
         }
     };
 
-    if check_health(&base_url) {
-        eprintln!("Gateway already running, reusing");
-        return;
-    }
+    // Always kill existing gateway so we start fresh with correct proxy env.
+    kill_existing_gateway();
 
     // Resolve openclaw binary from common locations
     let bin = find_openclaw_bin().unwrap_or_else(|| "openclaw".to_string());
 
-    // Use `gateway run` (foreground child process) instead of `gateway start` (systemd).
-    // This keeps Telegram and other plugins working the same as terminal usage.
-    let mut cmd = Command::new(&bin);
-    cmd.args(["gateway", "run"])
+    // Build a shell command that exports proxy vars THEN exec's the gateway.
+    // This guarantees ALL descendant processes inherit proxy settings,
+    // even if openclaw internally re-spawns with a clean env.
+    let proxy_exports = build_proxy_exports();
+    let shell_cmd = format!("{}exec '{}' gateway run", proxy_exports, bin);
+
+    eprintln!("Shell command: {}", shell_cmd);
+
+    let mut cmd = Command::new("bash");
+    cmd.args(["-c", &shell_cmd])
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
-
-    // Inject proxy into our own process env so all descendants inherit it.
-    inject_proxy_into_process_env();
 
     match cmd.spawn()
     {
@@ -57,6 +58,19 @@ pub fn ensure_started() {
         }
         Err(e) => eprintln!("Failed to start gateway: {}", e),
     }
+}
+
+/// Kill any existing openclaw-gateway process so we can start fresh.
+fn kill_existing_gateway() {
+    // Kill via pkill
+    let _ = Command::new("pkill").args(["-9", "-f", "openclaw-gateway"]).status();
+    let _ = Command::new("pkill").args(["-9", "-f", "openclaw gateway"]).status();
+    // Also stop systemd service if running
+    let _ = Command::new("systemctl")
+        .args(["--user", "stop", "openclaw-gateway.service"])
+        .status();
+    // Wait for port to free up
+    std::thread::sleep(Duration::from_secs(2));
 }
 
 /// Poll health endpoint until gateway is ready, up to `max_secs` seconds.
@@ -93,23 +107,28 @@ fn find_openclaw_bin() -> Option<String> {
         .map(|s| s.trim().to_string())
 }
 
-/// Inject proxy env vars into the current process so ALL descendant processes
-/// inherit them — including grandchildren spawned by `openclaw gateway run`.
-/// Reads from the current env first, falls back to GNOME gsettings.
-fn inject_proxy_into_process_env() {
-    if std::env::var("HTTP_PROXY").is_ok() || std::env::var("http_proxy").is_ok() {
-        // Already present (e.g. launched from a terminal with proxy).
-        // Re-set them so they appear in both upper and lower-case forms.
-        if let Ok(v) = std::env::var("HTTP_PROXY").or_else(|_| std::env::var("http_proxy")) {
-            set_proxy_vars(&v);
+/// Build shell export lines for proxy env vars.
+/// Checks current process env first, falls back to GNOME gsettings.
+fn build_proxy_exports() -> String {
+    let mut exports = Vec::new();
+    let no_proxy = "localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,::1";
+
+    // Try current process env first (e.g. launched from terminal)
+    if let Ok(proxy) = std::env::var("HTTP_PROXY").or_else(|_| std::env::var("http_proxy")) {
+        eprintln!("Proxy from env: {}", proxy);
+        exports.push(format!("export HTTP_PROXY='{}' http_proxy='{}' HTTPS_PROXY='{}' https_proxy='{}';",
+            proxy, proxy, proxy, proxy));
+        if let Ok(all) = std::env::var("ALL_PROXY").or_else(|_| std::env::var("all_proxy")) {
+            exports.push(format!("export ALL_PROXY='{}' all_proxy='{}';", all, all));
         }
-        return;
+        exports.push(format!("export NO_PROXY='{}' no_proxy='{}';", no_proxy, no_proxy));
+        return exports.join(" ");
     }
 
-    // Read from GNOME gsettings
+    // Fall back to GNOME gsettings
     let mode = gsettings_get("org.gnome.system.proxy", "mode");
     if mode.as_deref() != Some("manual") {
-        return;
+        return String::new();
     }
 
     let host = gsettings_get("org.gnome.system.proxy.http", "host");
@@ -119,7 +138,8 @@ fn inject_proxy_into_process_env() {
         if !h.is_empty() && p != "0" {
             let proxy = format!("http://{}:{}/", h, p);
             eprintln!("Proxy from gsettings: {}", proxy);
-            set_proxy_vars(&proxy);
+            exports.push(format!("export HTTP_PROXY='{}' http_proxy='{}' HTTPS_PROXY='{}' https_proxy='{}';",
+                proxy, proxy, proxy, proxy));
         }
     }
 
@@ -129,20 +149,12 @@ fn inject_proxy_into_process_env() {
     if let (Some(h), Some(p)) = (socks_host, socks_port) {
         if !h.is_empty() && p != "0" {
             let socks = format!("socks://{}:{}/", h, p);
-            std::env::set_var("ALL_PROXY", &socks);
-            std::env::set_var("all_proxy", &socks);
+            exports.push(format!("export ALL_PROXY='{}' all_proxy='{}';", socks, socks));
         }
     }
 
-    std::env::set_var("NO_PROXY", "localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,::1");
-    std::env::set_var("no_proxy", "localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,::1");
-}
-
-fn set_proxy_vars(proxy: &str) {
-    std::env::set_var("HTTP_PROXY", proxy);
-    std::env::set_var("http_proxy", proxy);
-    std::env::set_var("HTTPS_PROXY", proxy);
-    std::env::set_var("https_proxy", proxy);
+    exports.push(format!("export NO_PROXY='{}' no_proxy='{}';", no_proxy, no_proxy));
+    exports.join(" ")
 }
 
 fn gsettings_get(schema: &str, key: &str) -> Option<String> {
