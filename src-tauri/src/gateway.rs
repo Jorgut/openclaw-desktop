@@ -43,10 +43,8 @@ pub fn ensure_started() {
         .stdout(std::process::Stdio::null())
         .stderr(std::process::Stdio::null());
 
-    // Ensure proxy env vars are set for the gateway child process.
-    // GNOME injects these into desktop sessions but they may not be in the
-    // inherited env when launched certain ways. Read from gsettings as fallback.
-    ensure_proxy_env(&mut cmd);
+    // Inject proxy into our own process env so all descendants inherit it.
+    inject_proxy_into_process_env();
 
     match cmd.spawn()
     {
@@ -95,13 +93,16 @@ fn find_openclaw_bin() -> Option<String> {
         .map(|s| s.trim().to_string())
 }
 
-/// Ensure proxy environment variables are set on the child command.
-/// First checks the current process env (inherited from desktop session).
-/// Falls back to reading GNOME system proxy via gsettings.
-fn ensure_proxy_env(cmd: &mut Command) {
-    // Check if proxy is already in our env (e.g. launched from terminal)
+/// Inject proxy env vars into the current process so ALL descendant processes
+/// inherit them — including grandchildren spawned by `openclaw gateway run`.
+/// Reads from the current env first, falls back to GNOME gsettings.
+fn inject_proxy_into_process_env() {
     if std::env::var("HTTP_PROXY").is_ok() || std::env::var("http_proxy").is_ok() {
-        // Parent env is inherited by default, nothing to do
+        // Already present (e.g. launched from a terminal with proxy).
+        // Re-set them so they appear in both upper and lower-case forms.
+        if let Ok(v) = std::env::var("HTTP_PROXY").or_else(|_| std::env::var("http_proxy")) {
+            set_proxy_vars(&v);
+        }
         return;
     }
 
@@ -118,10 +119,7 @@ fn ensure_proxy_env(cmd: &mut Command) {
         if !h.is_empty() && p != "0" {
             let proxy = format!("http://{}:{}/", h, p);
             eprintln!("Proxy from gsettings: {}", proxy);
-            cmd.env("HTTP_PROXY", &proxy);
-            cmd.env("http_proxy", &proxy);
-            cmd.env("HTTPS_PROXY", &proxy);
-            cmd.env("https_proxy", &proxy);
+            set_proxy_vars(&proxy);
         }
     }
 
@@ -131,13 +129,20 @@ fn ensure_proxy_env(cmd: &mut Command) {
     if let (Some(h), Some(p)) = (socks_host, socks_port) {
         if !h.is_empty() && p != "0" {
             let socks = format!("socks://{}:{}/", h, p);
-            cmd.env("ALL_PROXY", &socks);
-            cmd.env("all_proxy", &socks);
+            std::env::set_var("ALL_PROXY", &socks);
+            std::env::set_var("all_proxy", &socks);
         }
     }
 
-    cmd.env("NO_PROXY", "localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,::1");
-    cmd.env("no_proxy", "localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,::1");
+    std::env::set_var("NO_PROXY", "localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,::1");
+    std::env::set_var("no_proxy", "localhost,127.0.0.1,192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,::1");
+}
+
+fn set_proxy_vars(proxy: &str) {
+    std::env::set_var("HTTP_PROXY", proxy);
+    std::env::set_var("http_proxy", proxy);
+    std::env::set_var("HTTPS_PROXY", proxy);
+    std::env::set_var("https_proxy", proxy);
 }
 
 fn gsettings_get(schema: &str, key: &str) -> Option<String> {
