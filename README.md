@@ -1,3 +1,5 @@
+[English](README.md) | [中文](README.zh-CN.md)
+
 # OpenClaw Desktop
 
 A lightweight Tauri v2 desktop wrapper for [OpenClaw](https://docs.openclaw.ai) gateway. One click to launch — no manual SSH tunnels, no browser tabs.
