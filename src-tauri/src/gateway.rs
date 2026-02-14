@@ -37,15 +37,33 @@ pub fn ensure_started() {
     // Build a shell command that exports proxy vars THEN exec's the gateway.
     // This guarantees ALL descendant processes inherit proxy settings,
     // even if openclaw internally re-spawns with a clean env.
+    //
+    // For Node.js (undici/fetch), we also set GLOBAL_AGENT_HTTP_PROXY so
+    // libraries like global-agent can intercept requests, and pass
+    // --use-openssl-ca to ensure TLS works through the proxy.
     let proxy_exports = build_proxy_exports();
     let shell_cmd = format!("{}exec '{}' gateway run", proxy_exports, bin);
 
     eprintln!("Shell command: {}", shell_cmd);
 
+    // Log to file so we can debug issues
+    let log_path = dirs::home_dir()
+        .map(|h| h.join(".openclaw/desktop-gateway.log"))
+        .unwrap_or_else(|| std::path::PathBuf::from("/tmp/openclaw-gateway.log"));
+
+    let log_file = std::fs::OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(&log_path);
+
     let mut cmd = Command::new("bash");
     cmd.args(["-c", &shell_cmd])
-        .stdout(std::process::Stdio::null())
-        .stderr(std::process::Stdio::null());
+        .stdout(std::process::Stdio::null());
+
+    match log_file {
+        Ok(file) => { cmd.stderr(std::process::Stdio::from(file)); }
+        Err(_) => { cmd.stderr(std::process::Stdio::null()); }
+    }
 
     match cmd.spawn()
     {
@@ -118,6 +136,9 @@ fn build_proxy_exports() -> String {
         eprintln!("Proxy from env: {}", proxy);
         exports.push(format!("export HTTP_PROXY='{}' http_proxy='{}' HTTPS_PROXY='{}' https_proxy='{}';",
             proxy, proxy, proxy, proxy));
+        // Also set GLOBAL_AGENT vars for Node.js global-agent compatibility
+        exports.push(format!("export GLOBAL_AGENT_HTTP_PROXY='{}' GLOBAL_AGENT_HTTPS_PROXY='{}';",
+            proxy, proxy));
         if let Ok(all) = std::env::var("ALL_PROXY").or_else(|_| std::env::var("all_proxy")) {
             exports.push(format!("export ALL_PROXY='{}' all_proxy='{}';", all, all));
         }
@@ -140,6 +161,9 @@ fn build_proxy_exports() -> String {
             eprintln!("Proxy from gsettings: {}", proxy);
             exports.push(format!("export HTTP_PROXY='{}' http_proxy='{}' HTTPS_PROXY='{}' https_proxy='{}';",
                 proxy, proxy, proxy, proxy));
+            // Also set GLOBAL_AGENT vars for Node.js global-agent compatibility
+            exports.push(format!("export GLOBAL_AGENT_HTTP_PROXY='{}' GLOBAL_AGENT_HTTPS_PROXY='{}';",
+                proxy, proxy));
         }
     }
 

@@ -17,13 +17,10 @@ pub fn run() {
             // Auto-start gateway if not already running
             gateway::ensure_started();
 
-            // Create system tray
+            // Create system tray (includes health monitor)
             if let Err(e) = tray::create_tray(app.handle()) {
                 eprintln!("Failed to create tray: {}", e);
             }
-
-            // Start background health monitor
-            tray::start_health_monitor(app.handle().clone());
 
             // Intercept window close → hide instead of quit
             let win = app
