@@ -104,3 +104,378 @@ button:active {
   font-size: 0.8rem;
   color: #555;
 }
+
+/* ===== Setup Wizard Styles ===== */
+
+.setup-body {
+  height: 100vh;
+  overflow-y: auto;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+#setup-app {
+  max-width: 520px;
+  width: 100%;
+  padding: 2rem;
+  margin: 0 auto;
+}
+
+/* Step indicator */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2rem;
+  gap: 0;
+}
+
+.step-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #1a1a2e;
+  border: 2px solid #2a2a3e;
+  color: #555;
+  font-size: 0.8rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.step-dot.active {
+  border-color: #0abab5;
+  color: #0abab5;
+  background: #0a2a2a;
+}
+
+.step-dot.done {
+  border-color: #0abab5;
+  background: #0abab5;
+  color: #0f0f1a;
+}
+
+.step-line {
+  height: 2px;
+  width: 40px;
+  background: #2a2a3e;
+  flex-shrink: 0;
+}
+
+/* Setup steps */
+.setup-step {
+  display: none;
+}
+
+.setup-step.active {
+  display: block;
+}
+
+.setup-step h2 {
+  font-size: 1.3rem;
+  margin-bottom: 0.5rem;
+}
+
+.step-desc {
+  color: #888;
+  font-size: 0.9rem;
+  margin-bottom: 1.5rem;
+}
+
+/* Checklist */
+.checklist {
+  margin: 1rem 0;
+}
+
+.check-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: #1a1a2e;
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  border: 1px solid #2a2a3e;
+}
+
+.check-item.success {
+  border-color: #0abab5;
+}
+
+.check-item.success .check-icon {
+  color: #0abab5;
+}
+
+.check-item.fail {
+  border-color: #e74c3c;
+}
+
+.check-item.fail .check-icon {
+  color: #e74c3c;
+}
+
+.check-item.warning {
+  border-color: #f39c12;
+}
+
+.check-item.warning .check-icon {
+  color: #f39c12;
+}
+
+.check-icon {
+  font-size: 1.1rem;
+  width: 24px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.check-label {
+  font-size: 0.95rem;
+  color: #e0e0e0;
+}
+
+.check-detail {
+  margin-left: auto;
+  font-size: 0.8rem;
+  color: #888;
+}
+
+/* Help box */
+.help-box {
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.help-box p {
+  margin-bottom: 0.5rem;
+}
+
+.help-link {
+  font-size: 0.85rem;
+  margin-bottom: 0.75rem;
+}
+
+.help-link a,
+.form-hint a {
+  color: #0abab5;
+  text-decoration: none;
+}
+
+.help-link a:hover,
+.form-hint a:hover {
+  text-decoration: underline;
+}
+
+.code-block {
+  background: #0f0f1a;
+  border: 1px solid #2a2a3e;
+  border-radius: 6px;
+  padding: 0.75rem;
+  margin: 0.5rem 0;
+  font-family: "SF Mono", "Fira Code", monospace;
+  font-size: 0.8rem;
+  color: #0abab5;
+  overflow-x: auto;
+  -webkit-user-select: text;
+  user-select: text;
+  line-height: 1.6;
+}
+
+/* Form elements */
+.form-group {
+  margin-bottom: 1.25rem;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  color: #bbb;
+  margin-bottom: 0.4rem;
+}
+
+.form-group input,
+.form-group select {
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 6px;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+  border-color: #0abab5;
+}
+
+.form-group input.input-error {
+  border-color: #e74c3c;
+}
+
+.form-group select {
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23888' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2rem;
+}
+
+.form-group select option {
+  background: #1a1a2e;
+  color: #e0e0e0;
+}
+
+.form-hint {
+  font-size: 0.8rem;
+  color: #666;
+  margin-top: 0.3rem;
+}
+
+/* Buttons */
+.step-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 2rem;
+  justify-content: flex-end;
+}
+
+.btn-secondary {
+  background: transparent;
+  color: #888;
+  border: 1px solid #2a2a3e;
+  padding: 0.6rem 1.5rem;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.btn-secondary:hover {
+  border-color: #555;
+  color: #ccc;
+}
+
+/* Small spinner */
+.spinner-small {
+  width: 18px;
+  height: 18px;
+  border: 2px solid #2a2a3e;
+  border-top-color: #0abab5;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Install result */
+.install-result {
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+.install-result.success {
+  color: #0abab5;
+}
+
+.install-result.fail {
+  color: #e74c3c;
+}
+
+#install-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+  color: #888;
+}
+
+/* Proxy status */
+.proxy-status {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #888;
+  font-size: 0.9rem;
+  margin: 1rem 0;
+}
+
+.proxy-detail {
+  font-size: 0.85rem;
+  color: #0abab5;
+  margin-top: 0.5rem;
+  padding-left: 2.5rem;
+}
+
+/* Summary */
+.summary-box {
+  background: #1a1a2e;
+  border: 1px solid #2a2a3e;
+  border-radius: 8px;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #2a2a3e;
+}
+
+.summary-item:last-child {
+  border-bottom: none;
+}
+
+.summary-label {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.summary-value {
+  color: #e0e0e0;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+/* Error message */
+.error-msg {
+  color: #e74c3c;
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+  padding: 0.5rem 0.75rem;
+  background: #2a1a1a;
+  border: 1px solid #e74c3c;
+  border-radius: 6px;
+}
+
+/* Saving indicator */
+#saving-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #888;
+  font-size: 0.9rem;
+  margin-top: 1rem;
+  justify-content: center;
+}
+
+/* Proxy hint in error page */
+.proxy-hint {
+  margin-top: 0.75rem;
+  font-size: 0.8rem;
+  color: #f39c12;
+}

@@ -34,3 +34,9 @@ pub fn get_gateway_url() -> Result<String, String> {
     let cfg = config::load_config()?;
     Ok(cfg.gateway.full_url())
 }
+
+#[tauri::command]
+pub fn start_gateway() -> Result<(), String> {
+    gateway::ensure_started();
+    Ok(())
+}

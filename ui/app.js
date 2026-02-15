@@ -21,6 +21,10 @@ function showError(title, message) {
   document.getElementById("error-message").textContent = message;
   showScreen("error");
   startRetryCountdown();
+
+  // Show proxy hint for connection errors
+  const hint = document.getElementById("proxy-hint");
+  if (hint) hint.style.display = "block";
 }
 
 function startRetryCountdown() {

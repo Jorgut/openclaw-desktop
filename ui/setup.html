@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OpenClaw - 初始设置</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="setup-body">
+  <div id="setup-app">
+    <!-- Step indicator -->
+    <div class="step-indicator">
+      <div class="step-dot active" data-step="1">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="2">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="3">3</div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="4">4</div>
+      <div class="step-line"></div>
+      <div class="step-dot" data-step="5">5</div>
+    </div>
+
+    <!-- Step 1: Environment Detection -->
+    <div id="step-1" class="setup-step active">
+      <h2>环境检测</h2>
+      <p class="step-desc">正在检测系统环境...</p>
+
+      <div class="checklist">
+        <div class="check-item" id="check-node">
+          <span class="check-icon">⏳</span>
+          <span class="check-label">Node.js</span>
+          <span class="check-detail" id="node-detail"></span>
+        </div>
+        <div class="check-item" id="check-npm">
+          <span class="check-icon">⏳</span>
+          <span class="check-label">npm</span>
+          <span class="check-detail" id="npm-detail"></span>
+        </div>
+        <div class="check-item" id="check-openclaw">
+          <span class="check-icon">⏳</span>
+          <span class="check-label">OpenClaw CLI</span>
+          <span class="check-detail" id="openclaw-detail"></span>
+        </div>
+      </div>
+
+      <!-- Node.js missing help -->
+      <div id="node-help" class="help-box" style="display:none">
+        <p>请先安装 Node.js (v18+)：</p>
+        <div class="code-block">
+          <code>curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -</code>
+          <br>
+          <code>sudo apt-get install -y nodejs</code>
+        </div>
+        <p class="help-link">或前往 <a href="#" id="nodejs-download-link">Node.js 官网</a> 下载安装</p>
+        <button class="btn-secondary" onclick="recheckPrereqs()">安装完成，重新检测</button>
+      </div>
+
+      <!-- OpenClaw install button -->
+      <div id="openclaw-install-box" class="help-box" style="display:none">
+        <p>需要安装 OpenClaw CLI：</p>
+        <button id="install-openclaw-btn" onclick="installOpenclaw()">一键安装 OpenClaw</button>
+        <div id="install-progress" style="display:none">
+          <div class="spinner-small"></div>
+          <span>正在安装...</span>
+        </div>
+        <p id="install-result" class="install-result"></p>
+      </div>
+
+      <div class="step-actions" id="step1-actions" style="display:none">
+        <button onclick="goToStep(2)">下一步</button>
+      </div>
+    </div>
+
+    <!-- Step 2: Model Configuration -->
+    <div id="step-2" class="setup-step">
+      <h2>模型配置</h2>
+      <p class="step-desc">选择 AI 模型供应商并配置 API Key</p>
+
+      <div class="form-group">
+        <label for="provider-select">模型供应商</label>
+        <select id="provider-select" onchange="onProviderChange()">
+          <option value="minimax">MiniMax（推荐，免费额度）</option>
+          <option value="openai">OpenAI</option>
+          <option value="anthropic">Anthropic (Claude)</option>
+          <option value="deepseek">DeepSeek</option>
+          <option value="openrouter">OpenRouter</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="model-input">模型名称</label>
+        <input type="text" id="model-input" placeholder="模型名称" value="MiniMax-M1">
+        <p class="form-hint" id="model-hint">MiniMax 默认使用 MiniMax-M1 模型</p>
+      </div>
+
+      <div class="form-group">
+        <label for="api-key-input">API Key</label>
+        <input type="password" id="api-key-input" placeholder="输入 API Key">
+        <p class="form-hint" id="provider-hint">前往 MiniMax 开放平台获取免费 API Key</p>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn-secondary" onclick="goToStep(1)">上一步</button>
+        <button onclick="validateAndNext(3)">下一步</button>
+      </div>
+    </div>
+
+    <!-- Step 3: Channel Configuration (Optional) -->
+    <div id="step-3" class="setup-step">
+      <h2>频道配置</h2>
+      <p class="step-desc">配置消息频道（可跳过，之后可以在设置中添加）</p>
+
+      <div class="form-group">
+        <label for="telegram-token">Telegram Bot Token</label>
+        <input type="password" id="telegram-token" placeholder="可选，如 123456:ABC-DEF...">
+        <p class="form-hint">通过 <a href="#" id="telegram-botfather-link">@BotFather</a> 创建 Bot 获取 Token</p>
+      </div>
+
+      <div class="form-group">
+        <label for="discord-token">Discord Bot Token</label>
+        <input type="password" id="discord-token" placeholder="可选">
+        <p class="form-hint">在 Discord Developer Portal 创建 Application 获取 Token</p>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn-secondary" onclick="goToStep(2)">上一步</button>
+        <button class="btn-secondary" onclick="goToStep(4)">跳过</button>
+        <button onclick="goToStep(4)">下一步</button>
+      </div>
+    </div>
+
+    <!-- Step 4: Proxy Detection -->
+    <div id="step-4" class="setup-step">
+      <h2>代理检测</h2>
+      <p class="step-desc">检测网络代理配置</p>
+
+      <div id="proxy-status" class="proxy-status">
+        <div class="spinner-small"></div>
+        <span>正在检测系统代理...</span>
+      </div>
+
+      <div id="proxy-detected" style="display:none">
+        <div class="check-item success">
+          <span class="check-icon">&#10003;</span>
+          <span class="check-label">已检测到代理</span>
+        </div>
+        <p class="proxy-detail" id="proxy-detail-text"></p>
+      </div>
+
+      <div id="proxy-not-detected" style="display:none">
+        <div class="check-item warning">
+          <span class="check-icon">!</span>
+          <span class="check-label">未检测到代理</span>
+        </div>
+        <p class="form-hint">如果您在中国大陆，可能需要配置代理才能正常使用 Telegram/Discord 频道。</p>
+        <div class="form-group">
+          <label for="manual-proxy">手动输入代理地址（可选）</label>
+          <input type="text" id="manual-proxy" placeholder="如 http://127.0.0.1:7897">
+        </div>
+      </div>
+
+      <div class="step-actions">
+        <button class="btn-secondary" onclick="goToStep(3)">上一步</button>
+        <button onclick="goToStep(5)">下一步</button>
+      </div>
+    </div>
+
+    <!-- Step 5: Complete -->
+    <div id="step-5" class="setup-step">
+      <h2>配置完成</h2>
+      <p class="step-desc">请确认以下配置信息</p>
+
+      <div class="summary-box">
+        <div class="summary-item">
+          <span class="summary-label">模型供应商</span>
+          <span class="summary-value" id="summary-provider"></span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">模型</span>
+          <span class="summary-value" id="summary-model"></span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">API Key</span>
+          <span class="summary-value" id="summary-apikey"></span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Telegram</span>
+          <span class="summary-value" id="summary-telegram"></span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">Discord</span>
+          <span class="summary-value" id="summary-discord"></span>
+        </div>
+        <div class="summary-item">
+          <span class="summary-label">代理</span>
+          <span class="summary-value" id="summary-proxy"></span>
+        </div>
+      </div>
+
+      <div id="save-error" class="error-msg" style="display:none"></div>
+
+      <div id="saving-indicator" style="display:none">
+        <div class="spinner-small"></div>
+        <span>正在保存配置并启动...</span>
+      </div>
+
+      <div class="step-actions" id="step5-actions">
+        <button class="btn-secondary" onclick="goToStep(4)">上一步</button>
+        <button id="launch-btn" onclick="saveAndLaunch()">保存并启动 OpenClaw</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="setup.js"></script>
+</body>
+</html>
